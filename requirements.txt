@@ -1,0 +1,4 @@
+requests==2.32.4
+openai==1.88.0
+langchain
+fastapi
