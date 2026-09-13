@@ -1,4 +1,9 @@
 requests==2.32.4
 openai==1.88.0
 langchain
+langchain-openai
+python-dotenv
 fastapi
+mcp
+langchain-ollama
+SQLAlchemy>=2.0,<3.0
