@@ -5,5 +5,8 @@ langchain-openai
 python-dotenv
 fastapi
 mcp
+pywin32
 langchain-ollama
 SQLAlchemy>=2.0,<3.0
+langgraph
+pygraphviz

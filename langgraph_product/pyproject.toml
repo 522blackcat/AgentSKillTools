@@ -1,0 +1,32 @@
+[project]
+name = "langgraph-product"
+version = "0.1.0"
+description = "Production-grade AI Agent Builder and Runtime"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "SQLAlchemy>=2.0,<3.0",
+    "psycopg[binary]",
+    "alembic",
+    "python-dotenv",
+    "langgraph",
+    "langchain-core",
+    "openai",
+    "redis",
+    "rq",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = true

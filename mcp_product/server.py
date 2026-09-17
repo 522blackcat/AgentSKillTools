@@ -1,11 +1,7 @@
 import os
 import json
-import smtplib
 from datetime import datetime
 
-from email.message import EmailMessage
-
-import httpx
 from mcp.server.mcpserver import MCPServer
 
 from dotenv import load_dotenv
@@ -52,7 +48,7 @@ async def search_google_news(keyword: str) -> str:
         json.dump(articles, f, ensure_ascii=False, indent=2)
 
     return (f"已获取与[{keyword}]相关的前5条google新闻：\n"
-            f"{json.dump(articles, ensure_ascii=False, indent=2)}\n"
+            f"{json.dumps(articles, ensure_ascii=False, indent=2)}\n"
             f"已保存到：{file_path}")
 
 

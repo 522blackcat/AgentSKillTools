@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: agent_postgres
+    environment:
+      POSTGRES_USER: agent
+      POSTGRES_PASSWORD: agent
+      POSTGRES_DB: agent
+    ports:
+      - "5432:5432"
+    volumes:
+      - agent_postgres_data:/var/lib/postgresql/data
+      - ./sql/init_pgvector.sql:/docker-entrypoint-initdb.d/init_pgvector.sql:ro
+
+  redis:
+    image: redis:7
+    container_name: agent_redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  agent_postgres_data:

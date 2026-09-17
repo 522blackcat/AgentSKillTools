@@ -1,0 +1,8 @@
+Alembic migrations for langgraph_product.
+
+Use:
+
+    alembic upgrade head
+    alembic revision --autogenerate -m "message"
+
+The runtime database URL is loaded from app.config.settings.database_url.

@@ -3,8 +3,7 @@ import os
 import re
 import json
 import asyncio
-from email import message
-from idlelib import query
+import sys
 from typing import Optional, List
 from contextlib import AsyncExitStack
 
@@ -45,7 +44,7 @@ class MCPClient:
         if not (is_python or is_js):
             raise ValueError("Path endswith is not .py or .js.")
 
-        command = "python" if is_python else "node"
+        command = sys.executable if is_python else "node"
         server_params = StdioServerParameters(command=command, args=[server_script_path], env=None)
         stdio_transport = await self.exit_stack.enter_async_context(stdio_client(server_params))
         self.stdio, self.writer = stdio_transport
@@ -74,7 +73,7 @@ class MCPClient:
                 "function": {
                     "name": tool.name,
                     "description": tool.description,
-                    "input_schema": tool.input_schema,
+                    "parameters": tool.input_schema,
 
                 }
             } for tool in response.tools
@@ -97,12 +96,16 @@ class MCPClient:
         tool_plan = await self.plan_tool_usage(query, available_tools)
 
         print(tool_plan)
+        if not tool_plan:
+            return "没有生成可执行的工具计划，请换一种更明确的说法。"
 
         tool_outputs = {}
         messages = [{"role": "user", "content": query}]
         for step in tool_plan:
             tool_name = step["name"]
-            tool_args = json.loads(step["arguments"])
+            tool_args = step.get("arguments", {})
+            if isinstance(tool_args, str):
+                tool_args = json.loads(tool_args)
 
             for key, val in tool_args.items():
                 if isinstance(val, str) and val.startswith("{{") and val.endswith("}}"):
@@ -117,6 +120,7 @@ class MCPClient:
                 tool_args["attachment_path"] = md_path
 
             result = await self.session.call_tool(tool_name, tool_args)
+            tool_outputs[tool_name] = result.content[0].text
             messages.append({
                 "role": "tool",
                 "tool_call_id": tool_name,
@@ -169,7 +173,7 @@ class MCPClient:
 
     async def plan_tool_usage(self, query: str, tools: List[dict]) -> List[dict]:
         tool_list_text = "\n".join([
-            f"- {tool['function']['name']}: {tool["function"]["description"]}"
+            f"- {tool['function']['name']}: {tool['function']['description']}"
             for tool in tools
         ])
 
@@ -180,8 +184,9 @@ class MCPClient:
                 "你只能从以下工具中选择（严格使用工具名词）：\n"
                 f"{tool_list_text}\n"
                 "如果多个工具需要串联，后续步骤中可以使用{{上一步工具名}}占位。\n"
-                "返回格式： JSON 数组，每个对象包含name 和 arguments字段。\n"
-                "不要返回自然语言处理，不要使用未列出的工具名。"
+                "返回格式： JSON 数组，每个对象包含 name 和 arguments 字段。\n"
+                "arguments 必须是 JSON 对象，不要把它写成字符串。\n"
+                "不要返回自然语言，不要使用未列出的工具名。"
             )
         }
 
@@ -197,14 +202,27 @@ class MCPClient:
             tool_choice="none"
         )
 
-        tool_calls = response.choices[0].message.tool_calls
+        content = response.choices[0].message.content or "[]"
         try:
-            return [{
-                "name": tool_call.function.name,
-                "arguments": tool_call.function.arguments
-            } for tool_call in tool_calls]
+            plan = json.loads(content)
+            if not isinstance(plan, list):
+                raise ValueError("工具计划必须是 JSON 数组")
+            allowed_tool_names = {tool["function"]["name"] for tool in tools}
+            validated_plan = []
+            for step in plan:
+                if not isinstance(step, dict):
+                    continue
+                name = step.get("name")
+                arguments = step.get("arguments", {})
+                if name not in allowed_tool_names:
+                    continue
+                if not isinstance(arguments, dict):
+                    arguments = {}
+                validated_plan.append({"name": name, "arguments": arguments})
+            return validated_plan
         except Exception as e:
-            print(f"工具调用链失败：: {e}\n\n原始返回{tool_calls}")
+            print(f"工具调用链失败：: {e}\n\n原始返回{content}")
+            return []
 
     async def clean_up(self):
         await self.exit_stack.aclose()
