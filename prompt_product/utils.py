@@ -1,6 +1,4 @@
 import inspect
-from datetime import datetime
-import pprint
 
 def function_to_json(func) -> dict:
     # 定义 Python 类型到 JSON 数据类型的映射

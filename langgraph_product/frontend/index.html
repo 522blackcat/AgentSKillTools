@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agent 项目生成平台</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --line: #d9dee8;
+      --text: #172033;
+      --muted: #647086;
+      --accent: #0f766e;
+      --accent-dark: #0b5f59;
+      --danger: #b42318;
+      --code: #101828;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header {
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+      padding: 18px 28px;
+    }
+    h1 {
+      margin: 0 0 4px;
+      font-size: 22px;
+      line-height: 1.25;
+    }
+    header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    main {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) 1fr;
+      gap: 18px;
+      padding: 18px;
+      max-width: 1320px;
+      margin: 0 auto;
+    }
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 16px;
+    }
+    label {
+      display: block;
+      margin: 12px 0 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px 11px;
+      color: var(--text);
+      font: inherit;
+      background: #fff;
+    }
+    .hint {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .hidden { display: none; }
+    textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+    button {
+      width: 100%;
+      margin-top: 14px;
+      border: 0;
+      border-radius: 6px;
+      padding: 11px 14px;
+      color: #fff;
+      background: var(--accent);
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:hover { background: var(--accent-dark); }
+    button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fbfcff;
+    }
+    .metric strong {
+      display: block;
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    pre {
+      margin: 0;
+      padding: 14px;
+      border-radius: 8px;
+      overflow: auto;
+      max-height: 560px;
+      background: var(--code);
+      color: #e6edf3;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .status {
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 10px;
+    }
+    .error { color: var(--danger); }
+    .path {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px;
+      background: #fbfcff;
+      word-break: break-all;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Agent 项目生成平台</h1>
+    <p>输入项目类型和需求，生成可运行 AI Agent 项目骨架。</p>
+  </header>
+  <main>
+    <section>
+      <h2>生成项目</h2>
+      <label for="domainPreset">项目领域</label>
+      <select id="domainPreset">
+        <option value="ecommerce" selected>电商客服 ecommerce</option>
+        <option value="education">教育培训 education</option>
+        <option value="real_estate">房产中介 real_estate</option>
+        <option value="investment">投研分析 investment</option>
+        <option value="law_firm">律所 law_firm</option>
+        <option value="hospital">医院 hospital</option>
+        <option value="custom">自定义领域</option>
+      </select>
+      <p class="hint">
+        项目领域用于选择生成规则。预设领域会生成更稳定的实体、工作流和工具 stub。
+        选“自定义领域”后可填写自己的 key。
+      </p>
+
+      <div id="customDomainWrap" class="hidden">
+        <label for="domainCustom">自定义领域 key</label>
+        <input id="domainCustom" placeholder="例如：fitness_coach / travel_planner / hr_recruiting" />
+        <p class="hint">key 使用英文、小写和下划线更稳定。需求描述仍会参与生成。</p>
+      </div>
+
+      <label for="name">项目名</label>
+      <input id="name" value="Ecommerce Support Agent" />
+
+      <label for="requirements">需求描述</label>
+      <textarea id="requirements">生成电商客服 AI Agent，处理订单查询、退款、商品推荐和工单升级。需要 RAG、memory、tool stub 和基础领域 API。</textarea>
+
+      <button id="generate">生成并校验</button>
+      <div id="status" class="status">后端默认地址：同源 API。</div>
+    </section>
+
+    <section>
+      <h2>结果</h2>
+      <div class="grid">
+        <div class="metric"><strong id="fileCount">-</strong><span>文件数</span></div>
+        <div class="metric"><strong id="validation">-</strong><span>validation</span></div>
+        <div class="metric"><strong id="evalStatus">-</strong><span>eval</span></div>
+      </div>
+      <div id="path" class="path">生成路径会显示在这里。</div>
+      <pre id="output">{}</pre>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const state = { tenant: null, user: null, run: null };
+    const examples = {
+      ecommerce: {
+        name: "Ecommerce Support Agent",
+        requirements: "生成电商客服 AI Agent，处理订单查询、退款、商品推荐和工单升级。需要 RAG、memory、tool stub 和基础领域 API。",
+      },
+      education: {
+        name: "Education Tutor Agent",
+        requirements: "生成教育辅导 AI Agent，处理课程问答、作业辅导、学习计划和学习进度跟踪。需要 RAG、memory、tool stub 和基础领域 API。",
+      },
+      real_estate: {
+        name: "Real Estate Agent",
+        requirements: "生成房产中介 AI Agent，处理房源匹配、客户线索、看房安排和交易跟进。需要 RAG、memory、tool stub 和基础领域 API。",
+      },
+      investment: {
+        name: "Investment Research Agent",
+        requirements: "生成投研分析 AI Agent，处理公司研究、报告总结、组合跟踪和信号分析。需要 RAG、memory、tool stub 和基础领域 API。",
+      },
+      law_firm: {
+        name: "Law Firm Agent",
+        requirements: "生成律所 AI Agent，处理知识库问答、合同草稿、案件材料总结和律师审核。需要 RAG、memory、tool stub 和基础领域 API。",
+      },
+      hospital: {
+        name: "Hospital Assistant Agent",
+        requirements: "生成医院助手 AI Agent，处理临床知识问答、病历摘要、照护任务和医生审核。需要 RAG、memory、tool stub 和基础领域 API。",
+      },
+    };
+
+    function setStatus(text, isError = false) {
+      $("status").textContent = text;
+      $("status").className = isError ? "status error" : "status";
+    }
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        headers: { "content-type": "application/json", ...(options.headers || {}) },
+        ...options,
+      });
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : null;
+      if (!response.ok) {
+        throw new Error(data?.detail || response.statusText);
+      }
+      return data;
+    }
+
+    async function ensureUser() {
+      const stamp = Date.now();
+      state.tenant = await api("/v1/tenants", {
+        method: "POST",
+        body: JSON.stringify({ name: `Local Demo ${stamp}` }),
+      });
+      state.user = await api("/v1/users", {
+        method: "POST",
+        body: JSON.stringify({
+          tenant_id: state.tenant.id,
+          email: `demo-${stamp}@example.com`,
+          username: `demo-${stamp}`,
+          role: "owner",
+        }),
+      });
+    }
+
+    function render(run) {
+      const output = run.output_json || {};
+      const project = output.generated_project || {};
+      $("fileCount").textContent = project.file_count ?? "-";
+      $("validation").textContent = project.validation?.status || "-";
+      $("evalStatus").textContent = project.eval_report?.status || "-";
+      $("path").textContent = project.storage_path || "未生成项目路径。";
+      $("output").textContent = JSON.stringify({
+        run_id: run.id,
+        status: run.status,
+        generated_project: project,
+        domain_profile: output.agent_blueprint?.domain_profile,
+        readiness: output.agent_blueprint?.readiness,
+      }, null, 2);
+    }
+
+    function selectedDomain() {
+      const preset = $("domainPreset").value;
+      if (preset === "custom") {
+        return $("domainCustom").value.trim() || "custom_agent";
+      }
+      return preset;
+    }
+
+    $("domainPreset").addEventListener("change", () => {
+      const preset = $("domainPreset").value;
+      $("customDomainWrap").classList.toggle("hidden", preset !== "custom");
+      if (examples[preset]) {
+        $("name").value = examples[preset].name;
+        $("requirements").value = examples[preset].requirements;
+      }
+    });
+
+    $("generate").addEventListener("click", async () => {
+      $("generate").disabled = true;
+      try {
+        setStatus("创建租户和用户...");
+        await ensureUser();
+
+        setStatus("创建 builder run...");
+        const run = await api("/v1/builder/runs", {
+          method: "POST",
+          body: JSON.stringify({
+            tenant_id: state.tenant.id,
+            user_id: state.user.id,
+            domain: selectedDomain(),
+            product_name: $("name").value.trim(),
+            requirements: $("requirements").value.trim(),
+          }),
+        });
+
+        setStatus("生成项目，运行校验...");
+        const invoked = await api(`/v1/builder/runs/${run.id}/invoke?tenant_id=${state.tenant.id}`, {
+          method: "POST",
+          body: "{}",
+        });
+
+        render(invoked);
+        setStatus("完成。");
+      } catch (error) {
+        setStatus(error.message, true);
+      } finally {
+        $("generate").disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

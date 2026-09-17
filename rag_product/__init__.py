@@ -1,23 +1,10 @@
-# from langchain_text_splitters import RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter
-#
-# # 比较多
-# # RecursiveCharacterTextSplitter(
-# #     chunk_size=500,
-# #     chunk_overlap=50,
-# #     separator=["\n\n", "\n", '。', '.', ' ', '']
-# # )
-#
-#
-# #
-# # MarkdownHeaderTextSplitter(
-# #     headers_to_split_on=[
-# #         ('#', "Header1"),
-# #         ('##', "Headerer2"),
-# #         (),
-# #     ]
-# # )
-#
-#
-# import chromadb
-#
-# print(chromadb)
+"""RAG engineering training project.
+
+This package is intentionally independent from langgraph_product. It teaches
+the core RAG pipeline first, then the mature ideas can be rewritten into the
+final LangGraph agent project.
+"""
+
+from rag_product.pipeline import RagEngine
+
+__all__ = ["RagEngine"]

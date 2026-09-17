@@ -2,10 +2,15 @@ import os
 import json
 from types import SimpleNamespace
 from openai import OpenAI
-from typing import List, Dict, Any
+from typing import Any, Callable
 from prompt_product.utils import function_to_json
 from prompt_product.prompt import build_system_prompt
-from prompt_product.tools import get_current_datetime, write_prompt_add_file, get_default_path
+from prompt_product.tools import (
+    evaluate_prompt_text,
+    get_current_datetime,
+    get_default_path,
+    write_prompt_add_file,
+)
 from dotenv import load_dotenv
 
 
@@ -15,10 +20,15 @@ load_dotenv(env_path)
 
 
 class Agent:
-    def __init__(self, client: OpenAI, model: str = "Qwen/Qwen2.5-32B-Instruct", tools: List = [],
-                 verbose: bool = True):
+    def __init__(
+        self,
+        client: OpenAI,
+        model: str = "Qwen/Qwen2.5-32B-Instruct",
+        tools: list[Callable[..., Any]] | None = None,
+        verbose: bool = True,
+    ):
         self.client = client
-        self.tools = tools
+        self.tools = tools or []
         self.model = model
         self.messages = [
             {"role": "system", "content": build_system_prompt(self.tools)},
@@ -26,7 +36,7 @@ class Agent:
         self.tool_map = {tool.__name__: tool for tool in self.tools}
         self.verbose = verbose
 
-    def get_tool_schema(self) -> List[Dict[str, Any]]:
+    def get_tool_schema(self) -> list[dict[str, Any]]:
         # 获取所有工具的 JSON 模式
         return [function_to_json(tool) for tool in self.tools]
 
@@ -40,16 +50,24 @@ class Agent:
         try:
             args_dict = json.loads(function_args)
         except json.JSONDecodeError:
-            args_dict = {}  # 防止模型胡言乱语返回无效 JSON
+            return {
+                "role": "tool",
+                "content": f"Error: 工具参数不是有效 JSON: {function_args}",
+                "tool_call_id": function_id,
+            }
 
         # 2. 动态获取函数并执行（更安全、更优雅的方式）
         func = self.tool_map.get(function_name)
 
-        if func:
-            # 现在的 args_dict 是真正的字典了，可以用 ** 解包
-            function_call_content = func(**args_dict)
-        else:
+        if not func:
             function_call_content = f"Error: 找不到名为 {function_name} 的工具"
+        else:
+            try:
+                function_call_content = func(**args_dict)
+            except TypeError as exc:
+                function_call_content = f"Error: 工具参数不匹配: {exc}"
+            except Exception as exc:
+                function_call_content = f"Error: 工具执行失败: {exc}"
 
         # 3. 组装返回给模型的工具结果
         return {
@@ -148,20 +166,38 @@ class Agent:
         return message.content
 
 
-client = OpenAI(
+def create_agent(verbose: bool = True) -> Agent:
+    client = OpenAI(
         api_key=os.getenv("LLM_API_KEY"),
         base_url=os.getenv("LLM_BASE_URL"),
     )
+    model = os.getenv("LLM_MODEL_ID") or "qwen3:4b"
+    return Agent(
+        client=client,
+        model=model,
+        tools=[
+            get_current_datetime,
+            get_default_path,
+            write_prompt_add_file,
+            evaluate_prompt_text,
+        ],
+        verbose=verbose,
+    )
 
-agent = Agent(
-    client=client,
-    model=os.getenv("LLM_MODEL_ID"),
-    tools=[get_current_datetime, get_default_path,  write_prompt_add_file],
-)
+
+def main() -> None:
+    agent = create_agent()
+    print("Prompt 工程训练器已启动。输入 exit 退出。")
+    print("示例：生成一个 RAG 类型的合同审查 Prompt")
+    while True:
+        prompt = input("\033[94mUser: \033[0m").strip()
+        if prompt.lower() in {"exit", "quit"}:
+            break
+        if not prompt:
+            continue
+        response = agent.get_completion(prompt)
+        print("\033[92mAssistant: \033[0m", response)
 
 
-if __name__ == '__main__':
-    # 使用彩色输出区分用户输入和AI回答
-    prompt = input("\033[94mUser: \033[0m")  # 蓝色显示用户输入提示
-    response = agent.get_completion(prompt)
-    print("\033[92mAssistant: \033[0m", response)  # 绿色显示AI助手回答
+if __name__ == "__main__":
+    main()
